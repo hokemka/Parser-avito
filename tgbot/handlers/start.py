@@ -18,14 +18,14 @@ router = Router(name="start")
 async def cmd_start(message: Message, state: FSMContext, user: User, is_admin: bool) -> None:
     await state.clear()
     await message.answer(welcome_text(user.first_name), reply_markup=main_menu_reply(is_admin))
-    await message.answer(menu_text(), reply_markup=main_menu_inline())
+    await message.answer(menu_text(), reply_markup=main_menu_inline(is_admin))
 
 
 @router.message(Command("menu"))
 async def cmd_menu(message: Message, state: FSMContext, is_admin: bool) -> None:
     await state.clear()
     await message.answer(menu_text(), reply_markup=main_menu_reply(is_admin))
-    await message.answer(menu_text(), reply_markup=main_menu_inline())
+    await message.answer(menu_text(), reply_markup=main_menu_inline(is_admin))
 
 
 @router.message(Command("cancel"))
@@ -35,12 +35,12 @@ async def cmd_cancel(message: Message, state: FSMContext, is_admin: bool) -> Non
 
 
 @router.callback_query(F.data == "menu:main")
-async def callback_main_menu(callback: CallbackQuery, state: FSMContext) -> None:
+async def callback_main_menu(callback: CallbackQuery, state: FSMContext, is_admin: bool) -> None:
     await state.clear()
     try:
-        await callback.message.edit_text(menu_text(), reply_markup=main_menu_inline())
+        await callback.message.edit_text(menu_text(), reply_markup=main_menu_inline(is_admin))
     except Exception:
-        await callback.message.answer(menu_text(), reply_markup=main_menu_inline())
+        await callback.message.answer(menu_text(), reply_markup=main_menu_inline(is_admin))
     await callback.answer()
 
 

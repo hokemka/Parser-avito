@@ -37,7 +37,7 @@ SETTING_PROMPTS: dict[str, str] = {
     "free_searches": "Сколько бесплатных поисков давать пользователю без подписки? Число.",
     "default_min_rating": "Минимальная оценка ИИ для новых мониторингов по умолчанию (0–10).",
     "default_check_interval": "Интервал проверки в секундах для мониторингов без тарифа (например, 300).",
-    "ai_model": "Название модели 1min.ai, например: gpt-4o-mini, gpt-4o, claude-sonnet-4-20250514, gemini-2.5-flash",
+    "ai_model": "ID модели 1min.ai. Бесплатные/дешёвые: qwen3-8b, qwen3-vl-8b-thinking, qwen3.7-flash. Сильнее: gpt-4o-mini, gpt-4.1, claude-sonnet-4-6, gemini-2.5-flash. Все, кроме qwen3.7-max, qwen-plus и gpt-4.1-nano, умеют смотреть фото.",
     "ai_candidates_per_search": "Сколько лучших объявлений отправлять в ИИ за один поиск (5–20).",
     "listings_per_search": "Сколько объявлений забирать с Авито за один поиск (10–50).",
     "avito_proxy": "Прокси для Авито в формате http://user:pass@host:port или socks5://host:port. Отправьте «-», чтобы убрать.",

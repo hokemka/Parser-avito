@@ -147,7 +147,7 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
         ),
         ai=AiConfig(
             api_key=ai.get("api_key", "").strip(),
-            model=ai.get("model", "gpt-4o-mini").strip(),
+            model=ai.get("model", "qwen3-8b").strip(),
             analyze_images=ai.getboolean("analyze_images", fallback=True),
             max_images=ai.getint("max_images", fallback=3),
             timeout=ai.getint("timeout", fallback=90),
