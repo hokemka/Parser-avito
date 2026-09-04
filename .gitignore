@@ -10,3 +10,5 @@ settings.ini
 *.log
 .pytest_cache/
 .env
+data/browser_profile/
+data/*.log
