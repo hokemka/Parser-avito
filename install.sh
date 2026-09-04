@@ -29,7 +29,7 @@ fi
 if [ "${SKIP_APT:-0}" != "1" ]; then
   log "Системные пакеты"
   $SUDO apt-get update -qq
-  $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl ca-certificates xvfb "$PYTHON_BIN" "$PYTHON_BIN-venv" python3-pip >/dev/null
+  $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl ca-certificates xvfb "$PYTHON_BIN" "$PYTHON_BIN-venv" python3-pip >/dev/null
 fi
 
 if [ -f "$(pwd)/main.py" ] && [ -f "$(pwd)/config.py" ]; then
