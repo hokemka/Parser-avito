@@ -212,7 +212,12 @@ def build_evaluation_prompt(request: SearchRequest, listing: Listing, photos_att
     params_text = "; ".join(f"{key}: {value}" for key, value in list(listing.params.items())[:25]) or "не указаны"
     description = listing.description.strip()[:MAX_DESCRIPTION_CHARS] or "описание отсутствует"
     wishes = (request.wishes or "").strip() or "не указаны"
-    photos_line = f"приложено {photos_attached} шт., оцени состояние по ним" if photos_attached else "фото не приложены, опирайся на текст"
+    if photos_attached:
+        photos_line = f"приложено {photos_attached} шт., оцени состояние по ним"
+    elif listing.images:
+        photos_line = f"в объявлении {len(listing.images)} шт., они не приложены — оценивай состояние по описанию и характеристикам"
+    else:
+        photos_line = "в объявлении нет фото — это повод для осторожности, опирайся на текст"
     return f"""Ты — эксперт-оценщик объявлений с Авито с многолетним опытом перекупа техники и товаров. Работаешь одновременно для перекупщика (ищет маржу) и обычного покупателя (ищет честную выгодную покупку). Оцени объявление строго, честно и конкретно, без воды.
 
 ЗАПРОС ПОЛЬЗОВАТЕЛЯ

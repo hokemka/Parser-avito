@@ -158,7 +158,7 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
             api_key=ai.get("api_key", "").strip(),
             model=ai.get("model", "qwen3-8b").strip(),
             vision_model=ai.get("vision_model", "qwen3-vl-flash").strip(),
-            analyze_images=ai.getboolean("analyze_images", fallback=True),
+            analyze_images=ai.getboolean("analyze_images", fallback=False),
             max_images=ai.getint("max_images", fallback=3),
             timeout=ai.getint("timeout", fallback=90),
         ),
