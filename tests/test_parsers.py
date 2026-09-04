@@ -1,9 +1,11 @@
 import json
 from urllib.parse import quote
 
+import pytest
+
 from tgbot.services.avito import (
-    Listing, Location, _filter_by_price, parse_locations, parse_mobile_details, parse_mobile_search, parse_web_search_page,
-    slugify_location,
+    AvitoUnavailableError, Listing, Location, _filter_by_price, parse_locations, parse_mobile_details, parse_mobile_page,
+    parse_mobile_search, parse_web_search_page, slugify_location,
 )
 from tgbot.utils.text import parse_price_range
 
@@ -90,3 +92,34 @@ def test_listing_json_roundtrip():
 def test_location_web_slug_fallback():
     assert Location(name="Тюмень").web_slug == "tyumen"
     assert Location(name="Москва", slug="moskva").web_slug == "moskva"
+
+
+def test_parse_mobile_page_api11_shape():
+    payload = {"status": "ok", "result": {"count": 3, "totalCount": 120, "nextPageId": "H4sI", "items": [
+        {"type": "item", "value": {"id": 5, "title": "iPhone 14", "price": "52 000 ₽", "uri": "ru.avito://1/item/show?itemId=5",
+                                   "uri_mweb": "/moskva/telefony/iphone_14_5?context=abc",
+                                   "images": {"count": 3, "main": {"140x105": "//img/s.jpg", "640x480": "//img/l.jpg"}},
+                                   "galleryItems": [{"type": "photo", "value": {"678x678": "//img/g.jpg"}}],
+                                   "location": "Москва", "address": "м. Арбатская", "time": 1725000000}},
+        {"type": "vip", "value": {"list": [{"type": "item", "value": {"id": 6, "title": "iPhone 14 Pro", "price": "80 000 ₽", "uri_mweb": "/x_6"}}]}},
+        {"type": "groupTitle", "value": {"title": "Объявления из других регионов"}},
+        {"type": "item", "value": {"id": 7, "title": "из другого региона", "price": "1 ₽", "uri_mweb": "/x_7"}},
+    ]}}
+    page = parse_mobile_page(payload)
+    assert [item.id for item in page.listings] == [5, 6]
+    assert page.listings[0].url == "https://www.avito.ru/moskva/telefony/iphone_14_5?context=abc"
+    assert page.listings[0].images == ["https://img/l.jpg"]
+    assert page.next_page_id == "H4sI" and page.last_page is True
+
+
+def test_parse_mobile_page_error_status():
+    with pytest.raises(AvitoUnavailableError):
+        parse_mobile_page({"status": "bad-request", "result": {"message": "key invalid"}})
+
+
+def test_parse_mobile_details_uses_canonical_url_and_price_object():
+    listing = Listing(id=9, title="Без названия", price=None, url="https://www.avito.ru/9")
+    data = {"title": "Asus VG248QG", "price": {"title": "Цена", "value": "12 500", "value_signed": "12 500 ₽", "metric": "₽"},
+            "seo": {"canonicalUrl": "https://www.avito.ru/kazan/tovary/asus_9"}, "description": "Монитор"}
+    parsed = parse_mobile_details(data, listing)
+    assert parsed.price == 12500 and parsed.url.endswith("asus_9") and parsed.title == "Asus VG248QG"

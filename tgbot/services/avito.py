@@ -19,11 +19,19 @@ WEB_BASE = "https://www.avito.ru"
 DEFAULT_KEY = "af0deccbgcgidddjgnvljitntccdduijhdinfgjgfjir"
 
 MOBILE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Origin": "https://m.avito.ru",
     "Referer": "https://m.avito.ru/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "X-Laas-Timezone": "Europe/Moscow",
+}
+MOBILE_PAGE_HEADERS = {
+    "User-Agent": MOBILE_HEADERS["User-Agent"],
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
 }
 WEB_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -114,13 +122,13 @@ POPULAR_LOCATIONS: tuple[Location, ...] = (
     Location(name="Санкт-Петербург", id=653240, slug="sankt-peterburg"),
     Location(name="Московская область", id=637680, slug="moskovskaya_oblast"),
     Location(name="Вся Россия", id=621540, slug="all"),
-    Location(name="Новосибирск", slug="novosibirsk"),
+    Location(name="Новосибирск", id=641780, slug="novosibirsk"),
     Location(name="Екатеринбург", slug="ekaterinburg"),
-    Location(name="Казань", slug="kazan"),
-    Location(name="Нижний Новгород", slug="nizhniy_novgorod"),
+    Location(name="Казань", id=650400, slug="kazan"),
+    Location(name="Нижний Новгород", id=640860, slug="nizhniy_novgorod"),
     Location(name="Краснодар", slug="krasnodar"),
     Location(name="Ростов-на-Дону", slug="rostov-na-donu"),
-    Location(name="Самара", slug="samara"),
+    Location(name="Самара", id=653040, slug="samara"),
     Location(name="Челябинск", slug="chelyabinsk"),
     Location(name="Уфа", slug="ufa"),
     Location(name="Красноярск", slug="krasnoyarsk"),
@@ -169,8 +177,12 @@ def _pick_largest_image(images: Any) -> str | None:
 
 def _extract_images(raw: Any, limit: int = 6) -> list[str]:
     urls: list[str] = []
+    if isinstance(raw, dict) and isinstance(raw.get("main"), dict):
+        raw = [raw["main"]]
     if isinstance(raw, list):
         for entry in raw:
+            if isinstance(entry, dict) and isinstance(entry.get("value"), dict):
+                entry = entry["value"]
             picked = _pick_largest_image(entry)
             if picked and picked not in urls:
                 urls.append(picked)
@@ -230,11 +242,19 @@ def _location_name(value: Any) -> str:
     return ""
 
 
+def _web_path(value: dict[str, Any]) -> str | None:
+    for key in ("uri_mweb", "urlPath", "url", "uri"):
+        candidate = value.get(key)
+        if isinstance(candidate, str) and (candidate.startswith("/") or candidate.startswith("http")):
+            return candidate
+    return None
+
+
 def parse_mobile_item(entry: dict[str, Any]) -> Listing | None:
     entry_type = str(entry.get("type", "item"))
-    if entry_type not in ("item", "xlItem", "xl_item", "vip", "premium"):
-        return None
     value = entry.get("value") if isinstance(entry.get("value"), dict) else entry
+    if entry_type not in ("item", "xlItem", "xl_item") and "id" not in value:
+        return None
     listing_id = value.get("id")
     if listing_id is None:
         return None
@@ -245,12 +265,13 @@ def parse_mobile_item(entry: dict[str, Any]) -> Listing | None:
     price = _parse_price(value.get("priceDetailed")) or _parse_price(value.get("price"))
     seller = value.get("seller") if isinstance(value.get("seller"), dict) else {}
     category = value.get("category") if isinstance(value.get("category"), dict) else {}
+    images = _extract_images(value.get("images")) or _extract_images(value.get("galleryItems"))
     return Listing(
         id=listing_id,
         title=str(value.get("title") or "Без названия").strip(),
         price=price,
-        url=_absolute_url(value.get("uri") or value.get("url") or value.get("urlPath"), listing_id),
-        images=_extract_images(value.get("images")),
+        url=_absolute_url(_web_path(value), listing_id),
+        images=images,
         location=_location_name(value.get("location")) or str(value.get("address") or ""),
         published_at=_parse_timestamp(value.get("time") or value.get("sortTimeStamp")),
         description=str(value.get("description") or "").strip(),
@@ -259,6 +280,33 @@ def parse_mobile_item(entry: dict[str, Any]) -> Listing | None:
         category=str(category.get("name") or "").strip(),
         source="mobile",
     )
+
+
+def _iter_mobile_entries(items: list[Any]) -> tuple[list[dict[str, Any]], bool]:
+    flat: list[dict[str, Any]] = []
+    for entry in items:
+        if not isinstance(entry, dict):
+            continue
+        entry_type = str(entry.get("type", ""))
+        if entry_type == "groupTitle":
+            return flat, True
+        value = entry.get("value")
+        if isinstance(value, dict) and isinstance(value.get("list"), list):
+            nested, stop = _iter_mobile_entries(value["list"])
+            flat.extend(nested)
+            if stop:
+                return flat, True
+            continue
+        if entry_type in ("item", "xlItem", "xl_item"):
+            flat.append(entry)
+    return flat, False
+
+
+@dataclass(slots=True)
+class MobilePage:
+    listings: list[Listing]
+    next_page_id: str | None
+    last_page: bool
 
 
 def parse_web_item(item: dict[str, Any]) -> Listing | None:
@@ -326,18 +374,26 @@ def parse_web_search_page(html: str) -> list[Listing]:
 
 
 def parse_mobile_search(data: dict[str, Any]) -> list[Listing]:
+    return parse_mobile_page(data).listings
+
+
+def parse_mobile_page(data: dict[str, Any]) -> MobilePage:
+    status = data.get("status")
+    if status not in (None, "ok"):
+        message = data.get("result", {}).get("message") if isinstance(data.get("result"), dict) else data.get("result")
+        raise AvitoUnavailableError(f"mobile api status {status}: {message}")
     result = data.get("result") if isinstance(data.get("result"), dict) else data
     items = result.get("items") if isinstance(result, dict) else None
     if not isinstance(items, list):
-        return []
+        return MobilePage([], None, True)
+    entries, hit_group_title = _iter_mobile_entries(items)
     listings: list[Listing] = []
-    for entry in items:
-        if not isinstance(entry, dict):
-            continue
+    for entry in entries:
         parsed = parse_mobile_item(entry)
         if parsed:
             listings.append(parsed)
-    return listings
+    next_page_id = result.get("nextPageId") if isinstance(result, dict) else None
+    return MobilePage(listings, str(next_page_id) if next_page_id else None, hit_group_title or not listings)
 
 
 def parse_mobile_details(data: dict[str, Any], listing: Listing) -> Listing:
@@ -370,6 +426,11 @@ def parse_mobile_details(data: dict[str, Any], listing: Listing) -> Listing:
         listing.price = price
     if not listing.title or listing.title == "Без названия":
         listing.title = str(body.get("title") or listing.title)
+    seo = body.get("seo") if isinstance(body.get("seo"), dict) else {}
+    sharing = body.get("sharing") if isinstance(body.get("sharing"), dict) else {}
+    canonical = seo.get("canonicalUrl") or sharing.get("url")
+    if isinstance(canonical, str) and canonical.startswith("http"):
+        listing.url = canonical
     return listing
 
 
@@ -434,6 +495,7 @@ class AvitoClient:
         self._session: AsyncSession | None = None
         self._lock = asyncio.Lock()
         self._last_request_at = 0.0
+        self._warmed_up = False
         self.blocked_until = 0.0
         self.last_error: str | None = None
 
@@ -442,6 +504,7 @@ class AvitoClient:
         if new_proxy != self.proxy:
             self.proxy = new_proxy
             self._session = None
+            self._warmed_up = False
         self.request_delay = request_delay
 
     @property
@@ -483,6 +546,7 @@ class AvitoClient:
                 last_exc = exc
                 logger.warning("avito request failed (%s/3) %s: %s", attempt + 1, url, exc)
                 self._session = None
+                self._warmed_up = False
                 await asyncio.sleep(1.5 * (attempt + 1))
                 continue
             if response.status_code in (403, 429):
@@ -540,8 +604,22 @@ class AvitoClient:
             raise AvitoUnavailableError("; ".join(errors))
         return _filter_by_price(_dedupe(listings), price_min, price_max)
 
+    async def _warm_up(self) -> None:
+        if self._warmed_up:
+            return
+        self._warmed_up = True
+        try:
+            await self._request("https://m.avito.ru/", None, MOBILE_PAGE_HEADERS)
+        except AvitoBlockedError:
+            raise
+        except AvitoError as exc:
+            logger.info("avito warm-up failed: %s", exc)
+
     async def _search_mobile(self, query: str, location_id: int, price_min: int | None, price_max: int | None, pages: int, limit: int) -> list[Listing]:
+        await self._warm_up()
         collected: list[Listing] = []
+        last_stamp = int(time.time()) // 60 * 60
+        next_page_id: str | None = None
         for page in range(1, pages + 1):
             params: dict[str, Any] = {
                 "key": self.key,
@@ -551,12 +629,16 @@ class AvitoClient:
                 "page": page,
                 "limit": limit,
                 "display": "list",
-                "withImagesOnly": "false",
+                "lastStamp": last_stamp,
+                "presentationType": "serp",
+                "localPriority": 0,
             }
             if price_min:
                 params["priceMin"] = price_min
             if price_max:
                 params["priceMax"] = price_max
+            if next_page_id:
+                params["pageId"] = next_page_id
             data: dict[str, Any] | None = None
             for version in (11, 9):
                 try:
@@ -566,9 +648,10 @@ class AvitoClient:
                     logger.info("mobile api v%s failed: %s", version, exc)
             if data is None:
                 raise AvitoUnavailableError("mobile api unavailable")
-            page_items = parse_mobile_search(data)
-            collected.extend(page_items)
-            if len(page_items) < limit // 2:
+            mobile_page = parse_mobile_page(data)
+            collected.extend(mobile_page.listings)
+            next_page_id = mobile_page.next_page_id
+            if mobile_page.last_page or len(mobile_page.listings) < limit // 2:
                 break
         return collected
 
@@ -593,13 +676,14 @@ class AvitoClient:
         return collected
 
     async def fetch_details(self, listing: Listing) -> Listing:
-        try:
-            data = await self._get_json(f"{MOBILE_API}/15/items/{listing.id}", {"key": self.key}, MOBILE_HEADERS)
-            return parse_mobile_details(data, listing)
-        except AvitoBlockedError:
-            raise
-        except AvitoError as exc:
-            logger.info("mobile details failed for %s: %s", listing.id, exc)
+        for version in (15, 18):
+            try:
+                data = await self._get_json(f"{MOBILE_API}/{version}/items/{listing.id}", {"key": self.key}, MOBILE_HEADERS)
+                return parse_mobile_details(data, listing)
+            except AvitoBlockedError:
+                raise
+            except AvitoError as exc:
+                logger.info("mobile details v%s failed for %s: %s", version, listing.id, exc)
         try:
             response = await self._request(listing.url, None, WEB_HEADERS)
             return parse_web_details(response.text, listing)

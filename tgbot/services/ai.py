@@ -178,22 +178,25 @@ class OneMinClient:
 
     async def chat(self, prompt: str, model: str, image_keys: list[str] | None = None) -> str:
         image_keys = image_keys or []
-        attempts: list[tuple[str, dict[str, Any]]] = []
+        unified_prompt: dict[str, Any] = {
+            "prompt": prompt,
+            "settings": {
+                "webSearchSettings": {"webSearch": False},
+                "historySettings": {"isMixed": False},
+                "withMemories": False,
+            },
+        }
+        if image_keys:
+            unified_prompt["attachments"] = {"images": image_keys}
+        attempts: list[tuple[str, dict[str, Any]]] = [
+            ("/api/chat-with-ai", {"type": "UNIFY_CHAT_WITH_AI", "model": model, "promptObject": unified_prompt}),
+        ]
         if image_keys:
             attempts.append(("/api/features", {
                 "type": "CHAT_WITH_IMAGE",
                 "model": model,
                 "promptObject": {"prompt": prompt, "isMixed": False, "imageList": image_keys},
             }))
-        attempts.append(("/api/chat-with-ai", {
-            "type": "UNIFY_CHAT_WITH_AI",
-            "model": model,
-            "promptObject": {
-                "prompt": prompt,
-                "settings": {"webSearchSettings": {"isWebSearch": False}, "historySettings": {"history_mixed": False}},
-                "attachments": {"images": image_keys, "files": []},
-            },
-        }))
         attempts.append(("/api/features", {
             "type": "CHAT_WITH_AI",
             "model": model,
