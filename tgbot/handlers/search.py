@@ -57,7 +57,8 @@ async def start_search(message: Message, state: FSMContext, session: AsyncSessio
     await state.clear()
     await state.set_state(CreateSearch.query)
     await message.answer(
-        f"{em('eye')} <b>Что ищем?</b>\n\nНапишите товар как можно точнее: модель, память, поколение.\n"
+        f"{em('eye')} <b>Что ищем?</b>\n\nНапишите только товар, как можно точнее: модель, память, поколение. "
+        f"Город и бюджет спрошу следующими шагами.\n"
         f"Например: <i>iPhone 13 128gb</i>, <i>PlayStation 5 Slim</i>, <i>MacBook Air M2</i>.",
         reply_markup=cancel_kb(),
     )
@@ -319,7 +320,8 @@ async def callback_run_search(
         return
     except AvitoError as exc:
         logger.warning("search failed: %s", exc)
-        await progress.edit_text(f"{em('cross')} Не удалось получить объявления с Авито. Попробуйте позже.", reply_markup=back_kb())
+        details = f"\n\n<code>{h(str(exc)[:300])}</code>\n{em('info')} Проверьте прокси и статус браузера в админке → «Парсер и ИИ»." if is_admin else ""
+        await progress.edit_text(f"{em('cross')} Не удалось получить объявления с Авито. Попробуйте позже.{details}", reply_markup=back_kb())
         return
     except Exception:
         logger.exception("unexpected search failure")
