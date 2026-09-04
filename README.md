@@ -22,7 +22,16 @@ Telegram-бот на aiogram 3.x: ищет объявления на Авито 
 
 С дата-центровых IP Авито почти всегда отдаёт блокировку — нужен мобильный или резидентный прокси (`[avito] proxy`). Для отладки без Camoufox можно переключить `engine = chromium` (обычный Playwright Chromium).
 
-## Установка
+## Установка одной командой (Ubuntu)
+
+```bash
+git clone -b claude/avito-parser-bot-ai-ldzas0 https://github.com/hokemka/Parser-avito.git avito-bot && cd avito-bot && \
+BOT_TOKEN='токен' ADMIN_IDS='id1,id2' AI_API_KEY='ключ 1min.ai' CRYPTOBOT_TOKEN='токен Crypto Pay' AVITO_PROXY='' bash install.sh
+```
+
+Скрипт ставит системные пакеты, создаёт `.venv`, ставит зависимости и браузер Camoufox, пишет `settings.ini` из переменных (если переменная не задана — спросит в терминале) и запускает бота в фоне. Управление: `./bot.sh start|stop|restart|status|log`. Повторный запуск `bash install.sh` обновляет код из ветки и перезапускает бота; `FORCE_SETTINGS=1` перезаписывает `settings.ini`.
+
+## Установка вручную
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
