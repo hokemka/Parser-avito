@@ -6,6 +6,7 @@ import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeChat
@@ -114,7 +115,8 @@ async def main() -> None:
     evaluator = ListingEvaluator(OneMinClient(config.ai.api_key, timeout=config.ai.timeout))
     search_service = SearchService(avito, evaluator, session_factory, settings)
 
-    bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True))
+    session = AiohttpSession(proxy=config.bot.proxy) if config.bot.proxy else None
+    bot = Bot(token=config.bot.token, session=session, default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True))
     monitor = MonitorService(bot, session_factory, search_service, settings, config.bot.admin_ids, config.avito.monitor_tick)
     crypto_watcher = CryptoInvoiceWatcher(bot, session_factory, settings)
     dp = build_dispatcher(config, session_factory, settings, search_service, monitor)

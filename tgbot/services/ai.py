@@ -132,7 +132,7 @@ class OneMinClient:
 
     def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(timeout=self.timeout)
+            self._session = aiohttp.ClientSession(timeout=self.timeout, trust_env=True)
         return self._session
 
     async def close(self) -> None:
@@ -389,7 +389,7 @@ class ListingEvaluator:
 
     def _get_http(self) -> aiohttp.ClientSession:
         if self._http is None or self._http.closed:
-            self._http = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
+            self._http = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20), trust_env=True)
         return self._http
 
     async def close(self) -> None:

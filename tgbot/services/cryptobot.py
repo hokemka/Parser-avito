@@ -35,7 +35,7 @@ class CryptoPayClient:
         clean = {k: v for k, v in (params or {}).items() if v is not None}
         headers = {"Crypto-Pay-API-Token": self.token}
         try:
-            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+            async with aiohttp.ClientSession(timeout=self.timeout, trust_env=True) as session:
                 async with session.post(f"{self.base_url}/{method}", json=clean, headers=headers) as response:
                     payload = await response.json(content_type=None)
         except aiohttp.ClientError as exc:

@@ -14,6 +14,7 @@ class BotConfig:
     admin_ids: tuple[int, ...]
     support_username: str
     premium_emoji: bool
+    proxy: str
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,7 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
             admin_ids=_parse_admin_ids(bot.get("admin_ids", "")),
             support_username=bot.get("support_username", "").strip().lstrip("@"),
             premium_emoji=bot.getboolean("premium_emoji", fallback=True),
+            proxy=bot.get("proxy", "").strip(),
         ),
         database=DatabaseConfig(path=db_path),
         avito=AvitoConfig(
