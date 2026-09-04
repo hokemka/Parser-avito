@@ -946,7 +946,8 @@ class AvitoClient:
             except AvitoError:
                 raise
             except Exception as exc:
-                last_error = f"{type(exc).__name__}: {str(exc)[:200]}"
+                first_line = str(exc).splitlines()[0] if str(exc) else type(exc).__name__
+                last_error = f"{type(exc).__name__}: {first_line[:160]}"
                 logger.warning("browser fetch failed (%s/2) %s: %s", attempt + 1, url, last_error)
                 await self.browser.stop()
                 await asyncio.sleep(2.0 * (attempt + 1))
