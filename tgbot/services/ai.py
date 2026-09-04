@@ -191,17 +191,12 @@ class OneMinClient:
         attempts: list[tuple[str, dict[str, Any]]] = [
             ("/api/chat-with-ai", {"type": "UNIFY_CHAT_WITH_AI", "model": model, "promptObject": unified_prompt}),
         ]
-        if image_keys:
+        if not image_keys:
             attempts.append(("/api/features", {
-                "type": "CHAT_WITH_IMAGE",
+                "type": "CHAT_WITH_AI",
                 "model": model,
-                "promptObject": {"prompt": prompt, "isMixed": False, "imageList": image_keys},
+                "promptObject": {"prompt": prompt, "isMixed": False, "webSearch": False},
             }))
-        attempts.append(("/api/features", {
-            "type": "CHAT_WITH_AI",
-            "model": model,
-            "promptObject": {"prompt": prompt, "isMixed": False, "webSearch": False},
-        }))
         errors: list[str] = []
         for path, body in attempts:
             try:
@@ -419,17 +414,26 @@ class ListingEvaluator:
                 keys.append(key)
         return keys
 
-    async def evaluate(self, request: SearchRequest, listing: Listing, model: str, analyze_images: bool, max_images: int) -> Evaluation:
+    async def evaluate(
+        self,
+        request: SearchRequest,
+        listing: Listing,
+        model: str,
+        analyze_images: bool,
+        max_images: int,
+        vision_model: str | None = None,
+    ) -> Evaluation:
         if not self.client.enabled:
             return heuristic_evaluation(request, listing)
         async with self._semaphore:
             image_keys = await self._upload_photos(listing, max_images) if analyze_images and listing.images else []
+            chosen_model = (vision_model or model) if image_keys else model
             prompt = build_evaluation_prompt(request, listing, len(image_keys))
             try:
-                answer = await self.client.chat(prompt, model=model, image_keys=image_keys)
+                answer = await self.client.chat(prompt, model=chosen_model, image_keys=image_keys)
                 return parse_evaluation(answer)
             except AiError as exc:
-                logger.warning("ai evaluation failed for %s: %s", listing.id, exc)
+                logger.warning("ai evaluation failed for %s via %s: %s", listing.id, chosen_model, exc)
                 if image_keys:
                     try:
                         answer = await self.client.chat(build_evaluation_prompt(request, listing, 0), model=model)

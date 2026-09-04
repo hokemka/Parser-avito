@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import configparser
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -52,6 +53,7 @@ class AvitoConfig:
 class AiConfig:
     api_key: str
     model: str
+    vision_model: str
     analyze_images: bool
     max_images: int
     timeout: int
@@ -84,6 +86,13 @@ class Config:
     payments: PaymentsConfig
     limits: LimitsConfig
     base_dir: Path = field(default=BASE_DIR)
+
+
+def _resolve_proxy(raw: str) -> str:
+    raw = raw.strip()
+    if raw.lower() == "env":
+        return os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or ""
+    return raw
 
 
 def _parse_admin_ids(raw: str) -> tuple[int, ...]:
@@ -122,7 +131,7 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
             admin_ids=_parse_admin_ids(bot.get("admin_ids", "")),
             support_username=bot.get("support_username", "").strip().lstrip("@"),
             premium_emoji=bot.getboolean("premium_emoji", fallback=True),
-            proxy=bot.get("proxy", "").strip(),
+            proxy=_resolve_proxy(bot.get("proxy", "")),
         ),
         database=DatabaseConfig(path=db_path),
         avito=AvitoConfig(
@@ -148,6 +157,7 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
         ai=AiConfig(
             api_key=ai.get("api_key", "").strip(),
             model=ai.get("model", "qwen3-8b").strip(),
+            vision_model=ai.get("vision_model", "qwen3-vl-flash").strip(),
             analyze_images=ai.getboolean("analyze_images", fallback=True),
             max_images=ai.getint("max_images", fallback=3),
             timeout=ai.getint("timeout", fallback=90),

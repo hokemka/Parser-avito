@@ -155,7 +155,8 @@ def general_settings_kb(settings: RuntimeSettings) -> InlineKeyboardMarkup:
 
 def parser_settings_kb(settings: RuntimeSettings) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [_btn("Модель ИИ", "settings:edit:ai_model", emoji="bot"), _btn(f"Фото в ИИ: {_flag(settings.ai_analyze_images)}", "settings:toggle:ai_analyze_images", emoji="photo", style=_flag_style(settings.ai_analyze_images))],
+        [_btn("Модель ИИ", "settings:edit:ai_model", emoji="bot"), _btn("Модель для фото", "settings:edit:ai_vision_model", emoji="photo")],
+        [_btn(f"Фото в ИИ: {_flag(settings.ai_analyze_images)}", "settings:toggle:ai_analyze_images", emoji="photo", style=_flag_style(settings.ai_analyze_images))],
         [_btn("Кандидатов для ИИ", "settings:edit:ai_candidates_per_search", emoji="stats"), _btn("Объявлений за поиск", "settings:edit:listings_per_search", emoji="box")],
         [_btn("Прокси Авито", "settings:edit:avito_proxy", emoji="link"), _btn("Пауза между запросами", "settings:edit:avito_request_delay", emoji="clock")],
         [_btn("Тест парсера", "settings:test_parser", emoji="verify", style=BLUE), _btn("Тест ИИ", "settings:test_ai", emoji="bot", style=BLUE)],

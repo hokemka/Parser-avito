@@ -37,7 +37,8 @@ SETTING_PROMPTS: dict[str, str] = {
     "free_searches": "Сколько бесплатных поисков давать пользователю без подписки? Число.",
     "default_min_rating": "Минимальная оценка ИИ для новых мониторингов по умолчанию (0–10).",
     "default_check_interval": "Интервал проверки в секундах для мониторингов без тарифа (например, 300).",
-    "ai_model": "ID модели 1min.ai. Бесплатные/дешёвые: qwen3-8b, qwen3-vl-8b-thinking, qwen3.7-flash. Сильнее: gpt-4o-mini, gpt-4.1, claude-sonnet-4-6, gemini-2.5-flash. Все, кроме qwen3.7-max, qwen-plus и gpt-4.1-nano, умеют смотреть фото.",
+    "ai_model": "ID текстовой модели 1min.ai для оценки без фото. Бесплатная: qwen3-8b. Дороже и сильнее: qwen3.7-flash, gpt-4o-mini, gpt-4.1, claude-sonnet-4-6, gemini-2.5-flash.",
+    "ai_vision_model": "ID модели 1min.ai, которая смотрит фото объявления. Проверено: qwen3-vl-flash (дёшево), gpt-4o-mini, gemini-2.5-flash. qwen3-8b фото не видит.",
     "ai_candidates_per_search": "Сколько лучших объявлений отправлять в ИИ за один поиск (5–20).",
     "listings_per_search": "Сколько объявлений забирать с Авито за один поиск (10–50).",
     "avito_proxy": "Прокси для Авито в формате http://user:pass@host:port или socks5://host:port. Отправьте «-», чтобы убрать.",
@@ -47,7 +48,7 @@ SETTING_PROMPTS: dict[str, str] = {
 SETTING_SCREENS: dict[str, str] = {
     "cryptobot_token": "admin:payments", "stars_rate": "admin:payments", "usd_rate": "admin:payments",
     "free_searches": "admin:settings", "default_min_rating": "admin:settings", "default_check_interval": "admin:settings",
-    "ai_model": "admin:parser", "ai_candidates_per_search": "admin:parser", "listings_per_search": "admin:parser",
+    "ai_model": "admin:parser", "ai_vision_model": "admin:parser", "ai_candidates_per_search": "admin:parser", "listings_per_search": "admin:parser",
     "avito_proxy": "admin:parser", "avito_request_delay": "admin:parser",
 }
 
@@ -154,7 +155,7 @@ def parser_text(settings: SettingsService, search_service: SearchService, monito
         f"{em('link')} Прокси: {proxy_shown}\n"
         f"{em('clock')} Пауза между запросами: {values.avito_request_delay:g} с · последний тик мониторинга: {last_tick}\n"
         f"{em('box')} Объявлений за поиск: {values.listings_per_search} · кандидатов для ИИ: {values.ai_candidates_per_search}\n\n"
-        f"{em('bot')} Модель: <code>{h(values.ai_model)}</code> · ключ 1min.ai: {'задан' if search_service.evaluator.client.enabled else 'НЕ задан (settings.ini)'}\n"
+        f"{em('bot')} Модель: <code>{h(values.ai_model)}</code> · для фото: <code>{h(values.ai_vision_model)}</code> · ключ 1min.ai: {'задан' if search_service.evaluator.client.enabled else 'НЕ задан (settings.ini)'}\n"
         f"{em('photo')} Анализ фото: {'включён' if values.ai_analyze_images else 'выключен'} (до {values.ai_max_images} фото)"
     )
 

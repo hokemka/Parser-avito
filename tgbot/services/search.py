@@ -110,7 +110,7 @@ class SearchService:
                 listing = await self.avito.fetch_details(listing)
             except Exception as exc:
                 logger.info("details unavailable for %s: %s", listing.id, exc)
-        evaluation = await self.evaluator.evaluate(request, listing, values.ai_model, values.ai_analyze_images, values.ai_max_images)
+        evaluation = await self.evaluator.evaluate(request, listing, values.ai_model, values.ai_analyze_images, values.ai_max_images, values.ai_vision_model)
         async with self._session_factory() as session:
             await self._store_evaluation(session, listing, request.fingerprint, evaluation)
         return RatedListing(listing, evaluation)

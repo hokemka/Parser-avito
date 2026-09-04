@@ -46,7 +46,8 @@ cp settings.example.ini settings.ini
 | `avito` | `profile_dir` | папка постоянного профиля браузера (куки переживают перезапуск) |
 | `avito` | `request_delay` | пауза между запросами к Авито в секундах (к ней добавляется случайный джиттер) |
 | `ai` | `api_key` | ключ API 1min.ai |
-| `ai` | `model` | ID модели 1min.ai: по умолчанию бесплатная `qwen3-8b` (понимает фото); варианты `qwen3.7-flash`, `gpt-4o-mini`, `gpt-4.1`, `claude-sonnet-4-6`, `gemini-2.5-flash` |
+| `ai` | `model` | текстовая модель 1min.ai, по умолчанию бесплатная `qwen3-8b`; варианты `qwen3.7-flash`, `gpt-4o-mini`, `gpt-4.1`, `claude-sonnet-4-6` |
+| `ai` | `vision_model` | модель для объявлений с фото, по умолчанию `qwen3-vl-flash` (проверено: видит фото, дёшево); `qwen3-8b` фото не понимает |
 | `payments` | `cryptobot_token` | токен приложения Crypto Pay (можно задать в админке) |
 
 Запуск:

@@ -23,6 +23,7 @@ class RuntimeSettings:
     cryptobot_asset: str
     usd_rate: float
     ai_model: str
+    ai_vision_model: str
     ai_analyze_images: bool
     ai_max_images: int
     free_searches: int
@@ -46,6 +47,7 @@ class RuntimeSettings:
             cryptobot_asset=config.payments.cryptobot_asset,
             usd_rate=config.payments.usd_rate,
             ai_model=config.ai.model,
+            ai_vision_model=config.ai.vision_model,
             ai_analyze_images=config.ai.analyze_images,
             ai_max_images=config.ai.max_images,
             free_searches=config.limits.free_searches,

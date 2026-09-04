@@ -46,7 +46,7 @@ class StubEvaluator(ListingEvaluator):
     def __init__(self) -> None:
         super().__init__(OneMinClient(""))
 
-    async def evaluate(self, request, listing, model, analyze_images, max_images):
+    async def evaluate(self, request, listing, model, analyze_images, max_images, vision_model=None):
         rating = 8.5 if listing.id in (101, 777) else 4.0
         return Evaluation(rating=rating, verdict="buy" if rating > 7 else "skip", matches_request=True, condition="хорошее",
                           condition_score=7.0, summary="Тест", pros=["p"], cons=["c"], red_flags=[], market_price=40000,
