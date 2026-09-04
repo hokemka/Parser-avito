@@ -150,5 +150,6 @@ def parser_settings_kb(settings: RuntimeSettings) -> InlineKeyboardMarkup:
         [_btn("Кандидатов для ИИ", "settings:edit:ai_candidates_per_search", emoji="stats"), _btn("Объявлений за поиск", "settings:edit:listings_per_search", emoji="box")],
         [_btn("Прокси Авито", "settings:edit:avito_proxy", emoji="link"), _btn("Пауза между запросами", "settings:edit:avito_request_delay", emoji="clock")],
         [_btn("Тест парсера", "settings:test_parser", emoji="verify"), _btn("Тест ИИ", "settings:test_ai", emoji="bot")],
+        [_btn("Перезапустить браузер", "settings:restart_browser", emoji="loading")],
         [_btn(BACK_TEXT, "admin:menu")],
     ])

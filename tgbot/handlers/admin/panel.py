@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -135,12 +136,22 @@ async def callback_admin_settings(callback: CallbackQuery, state: FSMContext, se
 def parser_text(settings: SettingsService, search_service: SearchService, monitor: MonitorService) -> str:
     values = settings.values
     avito = search_service.avito
-    status = f"{em('red')} заблокирован ({h(avito.last_error or '')})" if avito.is_blocked else f"{em('green')} работает"
+    info = avito.status()
+    if info["blocked"]:
+        status = f"{em('red')} блокировка ({h(info['last_error'] or '')})"
+    elif info["last_error"]:
+        status = f"{em('blue')} ошибка: {h(info['last_error'])}"
+    else:
+        status = f"{em('green')} работает"
+    browser = f"{info['engine']} · {'запущен' if info['running'] else 'не запущен'} · страниц: {info['pages']} · блокировок: {info['blocks']}"
     last_tick = time_ago(monitor.last_tick_at) if monitor.last_tick_at else "ещё не было"
+    proxy = values.avito_proxy
+    proxy_shown = h(re.sub(r"//[^@]+@", "//***@", proxy)) if proxy else "нет"
     return (
         f"{em('bot')} <b>Парсер и ИИ</b>\n\n"
         f"Статус Авито: {status}\n"
-        f"{em('link')} Прокси: {h(values.avito_proxy) if values.avito_proxy else 'нет'}\n"
+        f"{em('apps')} Браузер: {browser}\n"
+        f"{em('link')} Прокси: {proxy_shown}\n"
         f"{em('clock')} Пауза между запросами: {values.avito_request_delay:g} с · последний тик мониторинга: {last_tick}\n"
         f"{em('box')} Объявлений за поиск: {values.listings_per_search} · кандидатов для ИИ: {values.ai_candidates_per_search}\n\n"
         f"{em('bot')} Модель: <code>{h(values.ai_model)}</code> · ключ 1min.ai: {'задан' if search_service.evaluator.client.enabled else 'НЕ задан (settings.ini)'}\n"
@@ -256,6 +267,20 @@ async def callback_check_cryptobot(callback: CallbackQuery, settings: SettingsSe
         await callback.answer(f"Ошибка: {str(exc)[:150]}", show_alert=True)
         return
     await callback.answer(f"OK: приложение «{info.get('name', '?')}» (id {info.get('app_id', '?')})", show_alert=True)
+
+
+@router.callback_query(F.data == "settings:restart_browser")
+async def callback_restart_browser(callback: CallbackQuery, settings: SettingsService, search_service: SearchService, monitor: MonitorService) -> None:
+    await callback.answer("Перезапускаю браузер…")
+    avito = search_service.avito
+    avito.blocked_until = 0.0
+    avito.last_error = None
+    try:
+        await avito.browser.restart()
+    except Exception as exc:
+        logger.warning("browser restart failed: %s", exc)
+        avito.last_error = f"браузер не запустился: {str(exc)[:120]}"
+    await _render_screen(callback.message, "admin:parser", settings, search_service, monitor, edit=True)
 
 
 @router.callback_query(F.data == "settings:test_parser")

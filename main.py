@@ -17,7 +17,7 @@ from tgbot.handlers import profile, search, start, tasks
 from tgbot.middlewares.database import DatabaseMiddleware, UserMiddleware
 from tgbot.middlewares.throttling import ThrottlingMiddleware
 from tgbot.services.ai import ListingEvaluator, OneMinClient
-from tgbot.services.avito import AvitoClient
+from tgbot.services.avito import AvitoBrowser, AvitoClient, BrowserConfig
 from tgbot.services.monitor import MonitorService
 from tgbot.services.payment_watcher import CryptoInvoiceWatcher
 from tgbot.services.search import SearchService
@@ -97,7 +97,20 @@ async def main() -> None:
     async with session_factory() as session:
         await ensure_default_tariffs(session, settings.values.stars_rate)
 
-    avito = AvitoClient(key=config.avito.key, proxy=settings.values.avito_proxy, request_delay=settings.values.avito_request_delay)
+    browser = AvitoBrowser(BrowserConfig(
+        engine=config.avito.engine,
+        headless=config.avito.headless,
+        proxy=settings.values.avito_proxy,
+        profile_dir=config.avito.profile_dir,
+        locale=config.avito.locale,
+        os_name=config.avito.browser_os,
+        block_images=config.avito.block_images,
+        humanize=config.avito.humanize,
+        geoip=config.avito.geoip,
+        page_timeout=config.avito.page_timeout,
+        chromium_path=config.avito.chromium_path,
+    ))
+    avito = AvitoClient(browser, request_delay=settings.values.avito_request_delay, block_cooldown=config.avito.block_cooldown)
     evaluator = ListingEvaluator(OneMinClient(config.ai.api_key, timeout=config.ai.timeout))
     search_service = SearchService(avito, evaluator, session_factory, settings)
 

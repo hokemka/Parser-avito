@@ -27,8 +27,18 @@ class DatabaseConfig:
 
 @dataclass(frozen=True)
 class AvitoConfig:
-    key: str
+    engine: str
+    headless: str
     proxy: str
+    profile_dir: Path
+    locale: str
+    browser_os: str
+    block_images: bool
+    humanize: bool
+    geoip: bool
+    page_timeout: float
+    chromium_path: str
+    block_cooldown: int
     request_delay: float
     monitor_tick: int
     default_check_interval: int
@@ -101,6 +111,9 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
     if not db_path.is_absolute():
         db_path = BASE_DIR / db_path
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    profile_dir = Path(avito.get("profile_dir", "data/browser_profile"))
+    if not profile_dir.is_absolute():
+        profile_dir = BASE_DIR / profile_dir
 
     return Config(
         bot=BotConfig(
@@ -111,8 +124,18 @@ def load_config(path: Path | str = SETTINGS_PATH) -> Config:
         ),
         database=DatabaseConfig(path=db_path),
         avito=AvitoConfig(
-            key=avito.get("key", "").strip(),
+            engine=avito.get("engine", "camoufox").strip().lower(),
+            headless=avito.get("headless", "true").strip(),
             proxy=avito.get("proxy", "").strip(),
+            profile_dir=profile_dir,
+            locale=avito.get("locale", "ru-RU").strip(),
+            browser_os=avito.get("browser_os", "windows").strip().lower(),
+            block_images=avito.getboolean("block_images", fallback=True),
+            humanize=avito.getboolean("humanize", fallback=True),
+            geoip=avito.getboolean("geoip", fallback=True),
+            page_timeout=avito.getfloat("page_timeout", fallback=45.0),
+            chromium_path=avito.get("chromium_path", "").strip(),
+            block_cooldown=avito.getint("block_cooldown", fallback=600),
             request_delay=avito.getfloat("request_delay", fallback=2.0),
             monitor_tick=avito.getint("monitor_tick", fallback=30),
             default_check_interval=avito.getint("default_check_interval", fallback=300),
